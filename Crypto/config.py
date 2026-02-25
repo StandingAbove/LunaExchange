@@ -13,6 +13,7 @@ DAYS_PER_YEAR = 365
 
 _PROJECT_ROOT = Path(__file__).resolve().parent
 DATA_PATH = str(_PROJECT_ROOT / "Data" / "cleaned_crypto_data.csv")
+DATA_START_DATE = "2017-11-01"
 
 PRICE_COLUMN_BTC = "BTC-USD_close"
 PRICE_COLUMN_ETH = "ETH-USD_close"

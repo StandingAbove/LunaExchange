@@ -37,7 +37,7 @@ def _remove_ohlc_outliers(df: pd.DataFrame, asset_prefix: str, max_close_to_high
     return df.loc[valid].copy()
 
 
-def load_raw_crypto_csv(path: str) -> pd.DataFrame:
+def load_raw_crypto_csv(path: str, start_date: str = "2017-11-01") -> pd.DataFrame:
     """
     Load raw crypto CSV and return cleaned DataFrame indexed by Date.
 
@@ -48,6 +48,7 @@ def load_raw_crypto_csv(path: str) -> pd.DataFrame:
     - Drop exact duplicate rows
     - Enforce numeric columns
     - Remove rows with missing close prices
+    - Trim to start_date (default: 2017-11-01)
     """
 
     df = pd.read_csv(path)
@@ -92,6 +93,10 @@ def load_raw_crypto_csv(path: str) -> pd.DataFrame:
 
     # --- Final sort ---
     df = df.sort_index()
+
+    # --- Global backtest start date alignment ---
+    if start_date is not None:
+        df = df.loc[pd.Timestamp(start_date):].copy()
 
     return df
 
