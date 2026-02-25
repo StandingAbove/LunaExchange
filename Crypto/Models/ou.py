@@ -91,6 +91,9 @@ def ou_signal_on_spread(
     exit_z: float = 0.2,
     long_short: bool = True,
     max_leverage: float = 1.0,
+    smooth_sizing: bool = False,
+    min_std: float = 1e-6,
+    z_cap: float = 5.0,
 ) -> pd.Series:
     """
     Pair-trading OU-style signal on spread.
