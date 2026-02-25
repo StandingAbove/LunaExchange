@@ -1,3 +1,5 @@
+from pathlib import Path
+
 # =========================================================
 # Global Configuration
 # =========================================================
@@ -9,7 +11,8 @@ DAYS_PER_YEAR = 365
 # Data
 # =========================================================
 
-DATA_PATH = "/Users/samgeng14/PycharmProjects/LunaExchange/Crypto/Data/cleaned_crypto_data.csv"
+_PROJECT_ROOT = Path(__file__).resolve().parent
+DATA_PATH = str(_PROJECT_ROOT / "Data" / "cleaned_crypto_data.csv")
 
 PRICE_COLUMN_BTC = "BTC-USD_close"
 PRICE_COLUMN_ETH = "ETH-USD_close"
@@ -116,3 +119,4 @@ LEVERAGE_CAP = 1.5
 # =========================================================
 
 PERTURBATION_RANGE = 0.2     # ±20% for local tests
+from pathlib import Path

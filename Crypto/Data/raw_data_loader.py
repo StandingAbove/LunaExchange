@@ -17,6 +17,26 @@ REQUIRED_COLUMNS = [
 ]
 
 
+def _remove_ohlc_outliers(df: pd.DataFrame, asset_prefix: str, max_close_to_high_ratio: float = 5.0) -> pd.DataFrame:
+    """
+    Remove rows where close is implausibly far from daily high/low.
+    This catches data-entry spikes (e.g., ETH close typo while high/low are normal).
+    """
+    close_col = f"{asset_prefix}_close"
+    high_col = f"{asset_prefix}_high"
+    low_col = f"{asset_prefix}_low"
+
+    close = df[close_col].astype(float)
+    high = df[high_col].astype(float)
+    low = df[low_col].astype(float)
+
+    valid = (close > 0) & (high > 0) & (low > 0)
+    valid &= close <= (high * max_close_to_high_ratio)
+    valid &= close >= (low / max_close_to_high_ratio)
+
+    return df.loc[valid].copy()
+
+
 def load_raw_crypto_csv(path: str) -> pd.DataFrame:
     """
     Load raw crypto CSV and return cleaned DataFrame indexed by Date.
@@ -62,6 +82,10 @@ def load_raw_crypto_csv(path: str) -> pd.DataFrame:
             "ETH-USD_close",
         ]
     )
+
+    # --- Remove obvious OHLC outliers (bad ticks/typos) ---
+    df = _remove_ohlc_outliers(df, "BTC-USD")
+    df = _remove_ohlc_outliers(df, "ETH-USD")
 
     # --- Set index ---
     df = df.set_index("Date")
