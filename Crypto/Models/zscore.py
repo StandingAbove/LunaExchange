@@ -36,7 +36,7 @@ def _trend_direction(price: pd.Series, fast: int, slow: int) -> pd.Series:
 
 
 def zscore_signal(
-    df: pd.DataFrame,
+    data,
     price_column: str = "BTC-USD_close",
     # residual mean reversion
     resid_window: int = 180,
@@ -61,7 +61,12 @@ def zscore_signal(
     This is the cleanest way to make BTC MR stop bleeding.
     """
 
-    price = df[price_column].astype(float)
+    if isinstance(data, pd.Series):
+        price = data.astype(float).copy()
+    elif isinstance(data, pd.DataFrame):
+        price = data[price_column].astype(float)
+    else:
+        raise TypeError("data must be a pandas Series or DataFrame")
 
     resid_window = int(resid_window)
     filter_fast = int(filter_fast)
@@ -130,3 +135,29 @@ def zscore_signal(
 
     # Avoid lookahead
     return pos.shift(1).fillna(0.0)
+
+
+def zscore_signal_on_spread(
+    spread: pd.Series,
+    window: int = 90,
+    entry_z: float = 1.5,
+    exit_z: float = 0.3,
+    long_short: bool = True,
+    use_vol_target: bool = False,
+    max_leverage: float = 1.0,
+) -> pd.Series:
+    """
+    Convenience wrapper for pair-trading spread input.
+    """
+    return zscore_signal(
+        spread,
+        resid_window=window,
+        entry_z=entry_z,
+        exit_z=exit_z,
+        long_short=long_short,
+        use_vol_target=use_vol_target,
+        max_leverage=max_leverage,
+        filter_fast=max(5, window // 4),
+        filter_slow=max(20, window),
+        trend_thresh=0.02,
+    )
