@@ -1,161 +1,132 @@
+# Models/zscore.py
+
 import numpy as np
 import pandas as pd
-
 
 DAYS_PER_YEAR = 365
 
 
-# =========================================================
-# 1. Rolling Z-Score
-# =========================================================
+def _rolling_mean(x: pd.Series, window: int) -> pd.Series:
+    window = int(window)
+    minp = min(window, max(3, window // 3))
+    return x.rolling(window, min_periods=minp).mean()
 
-def rolling_zscore(series: pd.Series, window: int) -> pd.Series:
+
+def _rolling_std(x: pd.Series, window: int) -> pd.Series:
+    window = int(window)
+    minp = min(window, max(3, window // 3))
+    return x.rolling(window, min_periods=minp).std()
+
+
+def _trend_strength(price: pd.Series, fast: int, slow: int) -> pd.Series:
     """
-    Compute rolling z-score.
+    Normalized MA distance. Higher => stronger trend.
     """
-
-    mean = series.rolling(window, min_periods=max(30, window // 3)).mean()
-    std = series.rolling(window, min_periods=max(30, window // 3)).std()
-
-    z = (series - mean) / std
-
-    return z.replace([np.inf, -np.inf], np.nan)
+    fast_ma = _rolling_mean(price, fast)
+    slow_ma = _rolling_mean(price, slow)
+    strength = (fast_ma - slow_ma).abs() / slow_ma
+    return strength.replace([np.inf, -np.inf], np.nan)
 
 
-# =========================================================
-# 2. Z-Score Trading Signal
-# =========================================================
+def _trend_direction(price: pd.Series, fast: int, slow: int) -> pd.Series:
+    fast_ma = _rolling_mean(price, fast)
+    slow_ma = _rolling_mean(price, slow)
+    direction = np.sign(fast_ma - slow_ma)  # +1 uptrend, -1 downtrend
+    return pd.Series(direction, index=price.index).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+
 
 def zscore_signal(
-    price: pd.Series,
-    window: int = 180,
-    entry_z: float = 2.0,
-    exit_z: float = 0.5,
+    df: pd.DataFrame,
+    price_column: str = "BTC-USD_close",
+    # residual mean reversion
+    resid_window: int = 180,
+    entry_z: float = 1.5,
+    exit_z: float = 0.3,
     long_short: bool = True,
-):
-    price = price.astype(float)
+    # regime detection
+    filter_fast: int = 20,
+    filter_slow: int = 128,
+    trend_thresh: float = 0.03,
+    # risk control
+    use_vol_target: bool = True,
+    vol_target: float = 0.20,
+    vol_window: int = 30,
+    max_leverage: float = 1.5,
+) -> pd.Series:
+    """
+    Hybrid model:
+      - If market is sideways: mean-revert residual (price - slow MA) using z-score
+      - If market is trending: follow the trend (MA direction) instead of mean reversion
 
-    slow_ma = price.rolling(window).mean()
-    residual = price - slow_ma
+    This is the cleanest way to make BTC MR stop bleeding.
+    """
 
-    vol = residual.rolling(window).std()
-    z = residual / vol
+    price = df[price_column].astype(float)
 
-    pos = pd.Series(0.0, index=price.index)
+    resid_window = int(resid_window)
+    filter_fast = int(filter_fast)
+    filter_slow = int(filter_slow)
 
-    pos[z > entry_z] = -1
-    pos[z < -entry_z] = 1
+    if filter_fast >= filter_slow:
+        raise ValueError(f"filter_fast must be < filter_slow (got {filter_fast} >= {filter_slow})")
 
-    pos[(z.abs() < exit_z)] = 0
+    # Residual (de-trended)
+    slow_ma = _rolling_mean(price, resid_window)
+    resid = price - slow_ma
+
+    # Z-score of residual
+    resid_mean = _rolling_mean(resid, resid_window)
+    resid_std = _rolling_std(resid, resid_window)
+    z = (resid - resid_mean) / resid_std
+    z = z.replace([np.inf, -np.inf], np.nan)
+
+    # Regime
+    strength = _trend_strength(price, filter_fast, filter_slow)
+    is_trending = (strength >= float(trend_thresh)).astype(float)
+    is_sideways = 1.0 - is_trending
+
+    # Mean reversion position (stateful enter/exit)
+    mr_pos = pd.Series(0.0, index=price.index, dtype=float)
+    current = 0.0
+    for i in range(len(z)):
+        zi = z.iloc[i]
+        if np.isnan(zi):
+            mr_pos.iloc[i] = current
+            continue
+
+        if current == 0.0:
+            if zi > float(entry_z):
+                current = -1.0
+            elif zi < -float(entry_z):
+                current = 1.0
+        else:
+            if abs(zi) < float(exit_z):
+                current = 0.0
+
+        mr_pos.iloc[i] = current
 
     if not long_short:
-        pos = pos.clip(lower=0)
+        mr_pos = mr_pos.clip(lower=0.0)
 
-    return pos.shift(1).fillna(0)
+    # Trend-following fallback (when trending)
+    tf_pos = _trend_direction(price, filter_fast, filter_slow)
+    if not long_short:
+        tf_pos = tf_pos.clip(lower=0.0)
 
-# =========================================================
-# 3. Optional Volatility Targeting
-# =========================================================
+    # Combine regimes
+    pos = mr_pos * is_sideways + tf_pos * is_trending
 
-def apply_vol_target(
-    returns: pd.Series,
-    position: pd.Series,
-    target_vol: float = 0.15,
-    vol_window: int = 30,
-) -> pd.Series:
-    """
-    Scale position to target annual volatility.
-    """
+    # Vol targeting (scale total position)
+    if use_vol_target:
+        ret = price.pct_change().fillna(0.0)
+        vol_window = int(vol_window)
+        minp = min(vol_window, max(3, vol_window // 2))
+        realized_vol = ret.rolling(vol_window, min_periods=minp).std() * np.sqrt(DAYS_PER_YEAR)
+        scale = (float(vol_target) / realized_vol).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        scale = scale.clip(0.0, float(max_leverage))
+        pos = (pos * scale).clip(-float(max_leverage), float(max_leverage))
+    else:
+        pos = pos.clip(-float(max_leverage), float(max_leverage))
 
-    realized_vol = (
-        returns.rolling(vol_window)
-        .std()
-        * np.sqrt(DAYS_PER_YEAR)
-    )
-
-    scale = target_vol / realized_vol
-    scale = scale.replace([np.inf, -np.inf], np.nan).fillna(0.0)
-    scale = scale.clip(0.0, 3.0)
-
-    scaled_pos = position * scale
-
-    return scaled_pos
-
-
-# =========================================================
-# 4. Strategy Returns
-# =========================================================
-
-def zscore_returns(
-    price_series: pd.Series,
-    position: pd.Series,
-) -> pd.Series:
-    """
-    Compute strategy returns.
-    """
-
-    ret = price_series.pct_change().fillna(0.0)
-    position = position.reindex(price_series.index).fillna(0.0)
-
-    strat_ret = position * ret
-
-    return strat_ret
-
-
-# =========================================================
-# 5. Performance Metrics (365 annualization)
-# =========================================================
-
-def performance_summary(strat_ret: pd.Series) -> dict:
-    r = strat_ret.dropna()
-    if len(r) < 5:
-        return {}
-
-    ann_return = r.mean() * DAYS_PER_YEAR
-    ann_vol = r.std(ddof=1) * np.sqrt(DAYS_PER_YEAR)
-    sharpe = ann_return / ann_vol if ann_vol > 0 else np.nan
-
-    equity = (1.0 + r).cumprod()
-
-    years = len(r) / DAYS_PER_YEAR
-    cagr = equity.iloc[-1] ** (1 / years) - 1 if years > 0 else np.nan
-
-    peak = equity.cummax()
-    dd = equity / peak - 1.0
-    max_dd = dd.min()
-
-    return {
-        "Sharpe": float(sharpe),
-        "CAGR": float(cagr),
-        "MaxDD": float(max_dd),
-        "AnnualReturn": float(ann_return),
-        "AnnualVol": float(ann_vol),
-        "Observations": int(len(r)),
-    }
-
-
-# =========================================================
-# 6. Rolling Sharpe
-# =========================================================
-
-def rolling_sharpe(strat_ret: pd.Series, window: int = 365) -> pd.Series:
-    """
-    Rolling Sharpe with 365-day annualization.
-    """
-
-    def _sharpe(x):
-        if x.std() == 0:
-            return np.nan
-        return np.sqrt(DAYS_PER_YEAR) * x.mean() / x.std()
-
-    return strat_ret.rolling(window).apply(_sharpe, raw=False)
-
-
-# =========================================================
-# 7. Turnover
-# =========================================================
-
-def annual_turnover(position: pd.Series) -> float:
-    turnover = position.diff().abs().sum()
-    annualized = turnover / len(position) * DAYS_PER_YEAR
-    return float(annualized)
+    # Avoid lookahead
+    return pos.shift(1).fillna(0.0)
