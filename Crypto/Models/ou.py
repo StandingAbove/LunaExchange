@@ -91,9 +91,6 @@ def ou_signal_on_spread(
     exit_z: float = 0.2,
     long_short: bool = True,
     max_leverage: float = 1.0,
-    min_std: float = 1e-8,
-    z_cap: float = 4.0,
-    smooth_sizing: bool = True,
 ) -> pd.Series:
     """
     Pair-trading OU-style signal on spread.
@@ -134,21 +131,31 @@ def ou_signal_on_spread(
     pos = pos.clip(-float(max_leverage), float(max_leverage))
     return pos.shift(1).fillna(0.0)
 
+    if not long_short:
+        pos = pos.clip(lower=0.0)
+
+    pos = pos.clip(-float(max_leverage), float(max_leverage))
+    return pos.shift(1).fillna(0.0)
+
 
 def pair_ensemble_signal(
     spread: pd.Series,
     z_pos: pd.Series,
     trend_pos: pd.Series,
     mining_pos: pd.Series,
-    w_ou: float = 0.45,
-    w_z: float = 0.45,
-    w_trend: float = 0.05,
-    w_mining: float = 0.05,
+    w_ou: float = 0.35,
+    w_z: float = 0.35,
+    w_trend: float = 0.20,
+    w_mining: float = 0.10,
     ou_window: int = 90,
     ou_entry_z: float = 1.5,
     ou_exit_z: float = 0.3,
     leverage_cap: float = 1.0,
 ) -> pd.Series:
+    """
+    Linear-combination pair signal that blends OU with external model signals.
+    All input signals must share the spread index and represent spread direction.
+    """
     ou_pos = ou_signal_on_spread(
         spread,
         window=ou_window,

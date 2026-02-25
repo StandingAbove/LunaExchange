@@ -143,6 +143,7 @@ def zscore_signal(
     else:
         pos = pos.clip(-float(max_leverage), float(max_leverage))
 
+    # Avoid lookahead
     return pos.shift(1).fillna(0.0)
 
 
@@ -154,37 +155,19 @@ def zscore_signal_on_spread(
     long_short: bool = True,
     use_vol_target: bool = False,
     max_leverage: float = 1.0,
-    min_std: float = 1e-8,
-    use_smooth_sizing: bool = True,
 ) -> pd.Series:
     """
-    Pair-trading specific z-score signal for stationary spread.
-    Uses pure mean-reversion (no trend-following override), which is usually
-    more stable on cointegrated spreads than hybrid trend fallback.
+    Convenience wrapper for pair-trading spread input.
     """
-    s = spread.astype(float)
-    mean = _rolling_mean(s, window)
-    std = _rolling_std(s, window).clip(lower=float(min_std))
-    z = ((s - mean) / std).replace([np.inf, -np.inf], np.nan)
-
-    pos = _stateful_zscore_position(
-        z=z,
+    return zscore_signal(
+        spread,
+        resid_window=window,
         entry_z=entry_z,
         exit_z=exit_z,
         long_short=long_short,
+        use_vol_target=use_vol_target,
         max_leverage=max_leverage,
-        use_smooth_sizing=use_smooth_sizing,
+        filter_fast=max(5, window // 4),
+        filter_slow=max(20, window),
+        trend_thresh=0.02,
     )
-
-    if use_vol_target:
-        r = s.diff().fillna(0.0)
-        rv = r.rolling(max(20, window // 2), min_periods=max(10, window // 4)).std()
-        scale = (rv.median() / rv).replace([np.inf, -np.inf], np.nan).clip(0.0, 2.0).fillna(1.0)
-        pos = (pos * scale).clip(-float(max_leverage), float(max_leverage))
-
-    return pos
-
-
-def pair_zscore_signal(*args, **kwargs) -> pd.Series:
-    """Alias for readability in pair-trading notebooks."""
-    return zscore_signal_on_spread(*args, **kwargs)
