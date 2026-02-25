@@ -19,9 +19,6 @@ def _rolling_std(x: pd.Series, window: int) -> pd.Series:
 
 
 def _trend_strength(price: pd.Series, fast: int, slow: int) -> pd.Series:
-    """
-    Normalized MA distance. Higher => stronger trend.
-    """
     fast_ma = _rolling_mean(price, fast)
     slow_ma = _rolling_mean(price, slow)
     strength = (fast_ma - slow_ma).abs() / slow_ma
@@ -31,34 +28,67 @@ def _trend_strength(price: pd.Series, fast: int, slow: int) -> pd.Series:
 def _trend_direction(price: pd.Series, fast: int, slow: int) -> pd.Series:
     fast_ma = _rolling_mean(price, fast)
     slow_ma = _rolling_mean(price, slow)
-    direction = np.sign(fast_ma - slow_ma)  # +1 uptrend, -1 downtrend
+    direction = np.sign(fast_ma - slow_ma)
     return pd.Series(direction, index=price.index).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+
+
+def _stateful_zscore_position(
+    z: pd.Series,
+    entry_z: float,
+    exit_z: float,
+    long_short: bool,
+    max_leverage: float,
+    use_smooth_sizing: bool = False,
+) -> pd.Series:
+    pos = pd.Series(0.0, index=z.index, dtype=float)
+    current = 0.0
+
+    for i in range(len(z)):
+        zi = z.iloc[i]
+        if np.isnan(zi):
+            pos.iloc[i] = current
+            continue
+
+        if current == 0.0:
+            if zi > float(entry_z):
+                current = -1.0
+            elif zi < -float(entry_z):
+                current = 1.0
+        else:
+            if abs(zi) < float(exit_z):
+                current = 0.0
+
+        if use_smooth_sizing and current != 0.0:
+            size = np.tanh(abs(float(zi)) / max(1e-6, float(entry_z)))
+            current_signed = np.sign(current) * size
+            pos.iloc[i] = current_signed
+        else:
+            pos.iloc[i] = current
+
+    if not long_short:
+        pos = pos.clip(lower=0.0)
+
+    pos = pos.clip(-float(max_leverage), float(max_leverage))
+    return pos.shift(1).fillna(0.0)
 
 
 def zscore_signal(
     data,
     price_column: str = "BTC-USD_close",
-    # residual mean reversion
     resid_window: int = 180,
     entry_z: float = 1.5,
     exit_z: float = 0.3,
     long_short: bool = True,
-    # regime detection
     filter_fast: int = 20,
     filter_slow: int = 128,
     trend_thresh: float = 0.03,
-    # risk control
     use_vol_target: bool = True,
     vol_target: float = 0.20,
     vol_window: int = 30,
     max_leverage: float = 1.5,
 ) -> pd.Series:
     """
-    Hybrid model:
-      - If market is sideways: mean-revert residual (price - slow MA) using z-score
-      - If market is trending: follow the trend (MA direction) instead of mean reversion
-
-    This is the cleanest way to make BTC MR stop bleeding.
+    Single-asset hybrid regime model (kept for BTC/ETH notebooks).
     """
 
     if isinstance(data, pd.Series):
@@ -75,53 +105,33 @@ def zscore_signal(
     if filter_fast >= filter_slow:
         raise ValueError(f"filter_fast must be < filter_slow (got {filter_fast} >= {filter_slow})")
 
-    # Residual (de-trended)
     slow_ma = _rolling_mean(price, resid_window)
     resid = price - slow_ma
 
-    # Z-score of residual
     resid_mean = _rolling_mean(resid, resid_window)
     resid_std = _rolling_std(resid, resid_window)
     z = (resid - resid_mean) / resid_std
     z = z.replace([np.inf, -np.inf], np.nan)
 
-    # Regime
     strength = _trend_strength(price, filter_fast, filter_slow)
     is_trending = (strength >= float(trend_thresh)).astype(float)
     is_sideways = 1.0 - is_trending
 
-    # Mean reversion position (stateful enter/exit)
-    mr_pos = pd.Series(0.0, index=price.index, dtype=float)
-    current = 0.0
-    for i in range(len(z)):
-        zi = z.iloc[i]
-        if np.isnan(zi):
-            mr_pos.iloc[i] = current
-            continue
+    mr_pos = _stateful_zscore_position(
+        z=z,
+        entry_z=entry_z,
+        exit_z=exit_z,
+        long_short=long_short,
+        max_leverage=max_leverage,
+        use_smooth_sizing=False,
+    ).shift(-1).fillna(0.0)
 
-        if current == 0.0:
-            if zi > float(entry_z):
-                current = -1.0
-            elif zi < -float(entry_z):
-                current = 1.0
-        else:
-            if abs(zi) < float(exit_z):
-                current = 0.0
-
-        mr_pos.iloc[i] = current
-
-    if not long_short:
-        mr_pos = mr_pos.clip(lower=0.0)
-
-    # Trend-following fallback (when trending)
     tf_pos = _trend_direction(price, filter_fast, filter_slow)
     if not long_short:
         tf_pos = tf_pos.clip(lower=0.0)
 
-    # Combine regimes
     pos = mr_pos * is_sideways + tf_pos * is_trending
 
-    # Vol targeting (scale total position)
     if use_vol_target:
         ret = price.pct_change().fillna(0.0)
         vol_window = int(vol_window)

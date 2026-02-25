@@ -18,12 +18,6 @@ def _rolling_std(x: pd.Series, window: int) -> pd.Series:
     return x.rolling(window, min_periods=minp).std()
 
 
-# =========================================================
-# 1) Single-asset compatible OU signal (keeps your notebook working)
-#    IMPORTANT: We apply OU-like MR on a *stationary-ish* state variable:
-#      x = log(price) - rolling_mean(log(price))
-# =========================================================
-
 def ou_signal(
     price_series: pd.Series,
     window: int = 180,
@@ -32,22 +26,12 @@ def ou_signal(
     long_short: bool = True,
     detrend_window: int = 180,
 ) -> pd.Series:
-    """
-    Backward-compatible single-asset OU-ish signal.
-
-    This is NOT OU on raw price. It mean-reverts a detrended log-price state:
-      x = log(price) - MA(log(price))
-
-    That makes it at least coherent and prevents the worst drift bleed.
-    """
-
     price = price_series.astype(float)
     logp = np.log(price.replace(0, np.nan)).replace([np.inf, -np.inf], np.nan)
 
     detrend_window = int(detrend_window)
     x = logp - _rolling_mean(logp, detrend_window)
 
-    # z-score of x
     mean = _rolling_mean(x, window)
     std = _rolling_std(x, window)
     z = (x - mean) / std
@@ -79,21 +63,12 @@ def ou_signal(
     return pos.shift(1).fillna(0.0)
 
 
-# =========================================================
-# 2) Pair trading helpers (OU should live here)
-# =========================================================
-
 def build_spread(
     df: pd.DataFrame,
     btc_col: str = "BTC-USD_close",
     eth_col: str = "ETH-USD_close",
     beta_window: int = 180,
 ) -> pd.Series:
-    """
-    Rolling hedge ratio beta via rolling regression approximation:
-      beta = cov(logB, logE) / var(logE)
-      spread = logB - beta * logE
-    """
     log_b = np.log(df[btc_col].astype(float))
     log_e = np.log(df[eth_col].astype(float))
 
@@ -118,18 +93,13 @@ def ou_signal_on_spread(
     max_leverage: float = 1.0,
 ) -> pd.Series:
     """
-    OU-style mean reversion on stationary spread (pair trading).
-
-    Long spread when z < -entry
-    Short spread when z > entry
-    Exit when |z| < exit
+    Pair-trading OU-style signal on spread.
+    Dedicated pair behavior: pure mean reversion with optional smooth sizing.
     """
-
     s = spread.astype(float)
     mean = _rolling_mean(s, window)
-    std = _rolling_std(s, window)
-    z = (s - mean) / std
-    z = z.replace([np.inf, -np.inf], np.nan)
+    std = _rolling_std(s, window).clip(lower=float(min_std))
+    z = ((s - mean) / std).replace([np.inf, -np.inf], np.nan).clip(-float(z_cap), float(z_cap))
 
     pos = pd.Series(0.0, index=s.index, dtype=float)
     current = 0.0
@@ -149,7 +119,17 @@ def ou_signal_on_spread(
             if abs(zi) < float(exit_z):
                 current = 0.0
 
-        pos.iloc[i] = current
+        if smooth_sizing and current != 0.0:
+            mag = np.tanh(abs(float(zi)) / max(1e-6, float(entry_z)))
+            pos.iloc[i] = np.sign(current) * mag
+        else:
+            pos.iloc[i] = current
+
+    if not long_short:
+        pos = pos.clip(lower=0.0)
+
+    pos = pos.clip(-float(max_leverage), float(max_leverage))
+    return pos.shift(1).fillna(0.0)
 
     if not long_short:
         pos = pos.clip(lower=0.0)
