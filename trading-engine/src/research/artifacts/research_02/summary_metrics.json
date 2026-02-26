@@ -1,0 +1,41 @@
+{
+  "optimal_candidate_weight": 0.6,
+  "baseline": {
+    "annual_return": -0.1752593120335888,
+    "annual_vol": 0.15490540358485885,
+    "sharpe": -1.1659781854423426,
+    "max_drawdown": -0.5399849810017086,
+    "calmar": -0.32456330860993754
+  },
+  "combined": {
+    "annual_return": -0.0423818437752248,
+    "annual_vol": 0.13260655642750568,
+    "sharpe": -0.2603062350661104,
+    "max_drawdown": -0.28893580221431714,
+    "calmar": -0.14668256218309775
+  },
+  "uplift": {
+    "annual_return_delta": 0.132877468258364,
+    "sharpe_delta": 0.9056719503762322,
+    "max_drawdown_delta": 0.2510491787873914
+  },
+  "stat_tests": {
+    "one_sample_ttest_greater": {
+      "t_stat": 2.8752066480041654,
+      "p_value": 0.0020664708994176163
+    },
+    "wilcoxon_signed_rank": {
+      "stat": 183240.0,
+      "p_value": 0.01249507353675842
+    },
+    "bootstrap_mean_ci_95": {
+      "low": 0.00018531198138371175,
+      "high": 0.000978119813674516
+    }
+  },
+  "resource_count": {
+    "charts_generated": 3,
+    "json_tables": 1,
+    "csv_rows": 900
+  }
+}
