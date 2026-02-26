@@ -1,9 +1,17 @@
 from typing import Callable, Dict
 
-import polars as pl
-from polars import LazyFrame
+import pandas as pd
+try:
+    import polars as pl
+    from polars import LazyFrame
+except ModuleNotFoundError:  # optional for pandas-only workflows
+    pl = None
+    LazyFrame = object
 
-from common.bundles import ModelStateBundle
+try:
+    from common.bundles import ModelStateBundle
+except ModuleNotFoundError:
+    ModelStateBundle = object
 
 
 def AMMA(
@@ -36,6 +44,9 @@ def AMMA(
     """
 
     def run_model(bundle: ModelStateBundle) -> LazyFrame:
+        if pl is None:
+            raise ImportError('polars is required for AMMA() model-state execution.')
+
         lf = bundle.model_state.lazy()
         sig_frames = []
 
@@ -91,3 +102,53 @@ def AMMA(
         return final
 
     return run_model
+
+
+def amma_from_ibit_csv(
+        ibit_csv_path: str,
+        momentum_weights: Dict[int, float],
+        threshold: float = 0.0,
+        long_enabled: bool = True,
+        short_enabled: bool = False,
+) -> pd.DataFrame:
+    """
+    Build daily AMMA weights directly from the IBIT CSV schema.
+
+    The IBIT file is expected to include at least ``Date`` and ``Price`` columns.
+    Output is a DataFrame with columns: ``Date``, ``price``, ``amma_weight``,
+    and ``amma_position``.
+    """
+    ibit = pd.read_csv(ibit_csv_path).copy()
+
+    if "Date" not in ibit.columns or "Price" not in ibit.columns:
+        raise ValueError("IBIT CSV must contain 'Date' and 'Price' columns.")
+
+    ibit["Date"] = pd.to_datetime(ibit["Date"], format="%m/%d/%y", errors="coerce")
+    ibit["price"] = (
+        ibit["Price"]
+        .astype(str)
+        .str.replace(",", "", regex=False)
+        .str.replace("$", "", regex=False)
+        .astype(float)
+    )
+    ibit = ibit.dropna(subset=["Date", "price"]).sort_values("Date").reset_index(drop=True)
+
+    for window in momentum_weights:
+        col = f"momentum_{window}"
+        ibit[col] = ibit["price"].pct_change(window)
+
+    weighted_signal = pd.Series(0.0, index=ibit.index)
+    for window, weight in momentum_weights.items():
+        sig = ibit[f"momentum_{window}"]
+        component = pd.Series(0.0, index=ibit.index)
+
+        if long_enabled:
+            component = component.where(~(sig > threshold), weight)
+        if short_enabled:
+            component = component.where(~(sig < -threshold), -weight)
+
+        weighted_signal = weighted_signal.add(component.fillna(0.0), fill_value=0.0)
+
+    ibit["amma_weight"] = weighted_signal.fillna(0.0)
+    ibit["amma_position"] = ibit["amma_weight"].shift(1).fillna(0.0)
+    return ibit[["Date", "price", "amma_weight", "amma_position"]]
