@@ -23,13 +23,14 @@ scipy = "^1.11.0"
 jupyterlab = { version = ">=4", optional = true }
 ipywidgets = { version = ">=8", optional = true }
 matplotlib = { version = ">=3.8", optional = true }
+manim = { version = ">=0.18.1", optional = true }
 cvxpy = "^1.7.2"
 scikit-learn = "^1.3.0"
 ecos = "^2.0.14"
 mosek = "^11.0.28"
 
 [tool.poetry.extras]
-research = ["jupyterlab", "ipywidgets", "matplotlib"]
+research = ["jupyterlab", "ipywidgets", "matplotlib", "manim"]
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.30.1"

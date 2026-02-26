@@ -1,0 +1,4 @@
+# Generated chart artifacts (not committed; generated from notebook/script)
+*.png
+*.mp4
+*.gif
