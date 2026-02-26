@@ -1,0 +1,483 @@
+Metadata-Version: 2.1
+Name: pymsteams
+Version: 0.2.5
+Summary: Format messages and post to Microsoft Teams.
+License:                                  Apache License
+                                   Version 2.0, January 2004
+                                http://www.apache.org/licenses/
+        
+           TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+        
+           1. Definitions.
+        
+              "License" shall mean the terms and conditions for use, reproduction,
+              and distribution as defined by Sections 1 through 9 of this document.
+        
+              "Licensor" shall mean the copyright owner or entity authorized by
+              the copyright owner that is granting the License.
+        
+              "Legal Entity" shall mean the union of the acting entity and all
+              other entities that control, are controlled by, or are under common
+              control with that entity. For the purposes of this definition,
+              "control" means (i) the power, direct or indirect, to cause the
+              direction or management of such entity, whether by contract or
+              otherwise, or (ii) ownership of fifty percent (50%) or more of the
+              outstanding shares, or (iii) beneficial ownership of such entity.
+        
+              "You" (or "Your") shall mean an individual or Legal Entity
+              exercising permissions granted by this License.
+        
+              "Source" form shall mean the preferred form for making modifications,
+              including but not limited to software source code, documentation
+              source, and configuration files.
+        
+              "Object" form shall mean any form resulting from mechanical
+              transformation or translation of a Source form, including but
+              not limited to compiled object code, generated documentation,
+              and conversions to other media types.
+        
+              "Work" shall mean the work of authorship, whether in Source or
+              Object form, made available under the License, as indicated by a
+              copyright notice that is included in or attached to the work
+              (an example is provided in the Appendix below).
+        
+              "Derivative Works" shall mean any work, whether in Source or Object
+              form, that is based on (or derived from) the Work and for which the
+              editorial revisions, annotations, elaborations, or other modifications
+              represent, as a whole, an original work of authorship. For the purposes
+              of this License, Derivative Works shall not include works that remain
+              separable from, or merely link (or bind by name) to the interfaces of,
+              the Work and Derivative Works thereof.
+        
+              "Contribution" shall mean any work of authorship, including
+              the original version of the Work and any modifications or additions
+              to that Work or Derivative Works thereof, that is intentionally
+              submitted to Licensor for inclusion in the Work by the copyright owner
+              or by an individual or Legal Entity authorized to submit on behalf of
+              the copyright owner. For the purposes of this definition, "submitted"
+              means any form of electronic, verbal, or written communication sent
+              to the Licensor or its representatives, including but not limited to
+              communication on electronic mailing lists, source code control systems,
+              and issue tracking systems that are managed by, or on behalf of, the
+              Licensor for the purpose of discussing and improving the Work, but
+              excluding communication that is conspicuously marked or otherwise
+              designated in writing by the copyright owner as "Not a Contribution."
+        
+              "Contributor" shall mean Licensor and any individual or Legal Entity
+              on behalf of whom a Contribution has been received by Licensor and
+              subsequently incorporated within the Work.
+        
+           2. Grant of Copyright License. Subject to the terms and conditions of
+              this License, each Contributor hereby grants to You a perpetual,
+              worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+              copyright license to reproduce, prepare Derivative Works of,
+              publicly display, publicly perform, sublicense, and distribute the
+              Work and such Derivative Works in Source or Object form.
+        
+           3. Grant of Patent License. Subject to the terms and conditions of
+              this License, each Contributor hereby grants to You a perpetual,
+              worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+              (except as stated in this section) patent license to make, have made,
+              use, offer to sell, sell, import, and otherwise transfer the Work,
+              where such license applies only to those patent claims licensable
+              by such Contributor that are necessarily infringed by their
+              Contribution(s) alone or by combination of their Contribution(s)
+              with the Work to which such Contribution(s) was submitted. If You
+              institute patent litigation against any entity (including a
+              cross-claim or counterclaim in a lawsuit) alleging that the Work
+              or a Contribution incorporated within the Work constitutes direct
+              or contributory patent infringement, then any patent licenses
+              granted to You under this License for that Work shall terminate
+              as of the date such litigation is filed.
+        
+           4. Redistribution. You may reproduce and distribute copies of the
+              Work or Derivative Works thereof in any medium, with or without
+              modifications, and in Source or Object form, provided that You
+              meet the following conditions:
+        
+              (a) You must give any other recipients of the Work or
+                  Derivative Works a copy of this License; and
+        
+              (b) You must cause any modified files to carry prominent notices
+                  stating that You changed the files; and
+        
+              (c) You must retain, in the Source form of any Derivative Works
+                  that You distribute, all copyright, patent, trademark, and
+                  attribution notices from the Source form of the Work,
+                  excluding those notices that do not pertain to any part of
+                  the Derivative Works; and
+        
+              (d) If the Work includes a "NOTICE" text file as part of its
+                  distribution, then any Derivative Works that You distribute must
+                  include a readable copy of the attribution notices contained
+                  within such NOTICE file, excluding those notices that do not
+                  pertain to any part of the Derivative Works, in at least one
+                  of the following places: within a NOTICE text file distributed
+                  as part of the Derivative Works; within the Source form or
+                  documentation, if provided along with the Derivative Works; or,
+                  within a display generated by the Derivative Works, if and
+                  wherever such third-party notices normally appear. The contents
+                  of the NOTICE file are for informational purposes only and
+                  do not modify the License. You may add Your own attribution
+                  notices within Derivative Works that You distribute, alongside
+                  or as an addendum to the NOTICE text from the Work, provided
+                  that such additional attribution notices cannot be construed
+                  as modifying the License.
+        
+              You may add Your own copyright statement to Your modifications and
+              may provide additional or different license terms and conditions
+              for use, reproduction, or distribution of Your modifications, or
+              for any such Derivative Works as a whole, provided Your use,
+              reproduction, and distribution of the Work otherwise complies with
+              the conditions stated in this License.
+        
+           5. Submission of Contributions. Unless You explicitly state otherwise,
+              any Contribution intentionally submitted for inclusion in the Work
+              by You to the Licensor shall be under the terms and conditions of
+              this License, without any additional terms or conditions.
+              Notwithstanding the above, nothing herein shall supersede or modify
+              the terms of any separate license agreement you may have executed
+              with Licensor regarding such Contributions.
+        
+           6. Trademarks. This License does not grant permission to use the trade
+              names, trademarks, service marks, or product names of the Licensor,
+              except as required for reasonable and customary use in describing the
+              origin of the Work and reproducing the content of the NOTICE file.
+        
+           7. Disclaimer of Warranty. Unless required by applicable law or
+              agreed to in writing, Licensor provides the Work (and each
+              Contributor provides its Contributions) on an "AS IS" BASIS,
+              WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+              implied, including, without limitation, any warranties or conditions
+              of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+              PARTICULAR PURPOSE. You are solely responsible for determining the
+              appropriateness of using or redistributing the Work and assume any
+              risks associated with Your exercise of permissions under this License.
+        
+           8. Limitation of Liability. In no event and under no legal theory,
+              whether in tort (including negligence), contract, or otherwise,
+              unless required by applicable law (such as deliberate and grossly
+              negligent acts) or agreed to in writing, shall any Contributor be
+              liable to You for damages, including any direct, indirect, special,
+              incidental, or consequential damages of any character arising as a
+              result of this License or out of the use or inability to use the
+              Work (including but not limited to damages for loss of goodwill,
+              work stoppage, computer failure or malfunction, or any and all
+              other commercial damages or losses), even if such Contributor
+              has been advised of the possibility of such damages.
+        
+           9. Accepting Warranty or Additional Liability. While redistributing
+              the Work or Derivative Works thereof, You may choose to offer,
+              and charge a fee for, acceptance of support, warranty, indemnity,
+              or other liability obligations and/or rights consistent with this
+              License. However, in accepting such obligations, You may act only
+              on Your own behalf and on Your sole responsibility, not on behalf
+              of any other Contributor, and only if You agree to indemnify,
+              defend, and hold each Contributor harmless for any liability
+              incurred by, or claims asserted against, such Contributor by reason
+              of your accepting any such warranty or additional liability.
+        
+           END OF TERMS AND CONDITIONS
+        
+           APPENDIX: How to apply the Apache License to your work.
+        
+              To apply the Apache License to your work, attach the following
+              boilerplate notice, with the fields enclosed by brackets "[]"
+              replaced with your own identifying information. (Don't include
+              the brackets!)  The text should be enclosed in the appropriate
+              comment syntax for the file format. We also recommend that a
+              file or class name and description of purpose be included on the
+              same "printed page" as the copyright notice for easier
+              identification within third-party archives.
+        
+           Copyright 2018 Ryan Veach
+        
+           Licensed under the Apache License, Version 2.0 (the "License");
+           you may not use this file except in compliance with the License.
+           You may obtain a copy of the License at
+        
+               http://www.apache.org/licenses/LICENSE-2.0
+        
+           Unless required by applicable law or agreed to in writing, software
+           distributed under the License is distributed on an "AS IS" BASIS,
+           WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+           See the License for the specific language governing permissions and
+           limitations under the License.
+        
+Project-URL: Homepage, https://github.com/rveachkc/pymsteams
+Keywords: Microsoft,Teams
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Information Technology
+Classifier: Intended Audience :: System Administrators
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Topic :: Internet
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Office/Business
+Classifier: Topic :: Office/Business :: Groupware
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: requests>=2.20.0
+Provides-Extra: async
+Requires-Dist: httpx>=0.28.1; extra == "async"
+
+# pymsteams
+
+## Important: [Ongoing Support and Request for Maintainers](https://github.com/rveachkc/pymsteams/issues/151)
+
+Looking for new maintainers. Please see https://github.com/rveachkc/pymsteams/issues/151
+
+[![PyPI version](https://badge.fury.io/py/pymsteams.svg)](https://badge.fury.io/py/pymsteams)
+
+Python Wrapper Library to send requests to Microsoft Teams Webhooks.
+Microsoft refers to these messages as Connector Cards.  A message can be sent with only the main Connector Card, or additional sections can be included into the message.
+
+This library uses Webhook Connectors for Microsoft Teams.  Please visit the following Microsoft Documentation link for instructions on how to obtain the correct url for your Channel: https://dev.outlook.com/Connectors/GetStarted#creating-messages-through-office-365-connectors-in-microsoft-teams
+
+Please refer to the Microsoft Documentation for the most up to date screenshots.
+https://dev.outlook.com/connectors/reference
+
+## Installation
+
+Install with pip:
+
+```bash
+pip install pymsteams
+```
+
+Install with async capabilities (python 3.6+):
+
+```bash
+pip install pymsteams[async]
+```
+
+#### Python 2 Installation
+
+At time of writing, the latest release supported by Python 2 is [Version 0.1.16](https://github.com/rveachkc/pymsteams/releases/tag/0.1.16)
+
+## Usage
+
+### Creating ConnectorCard Messages
+
+This is the simplest implementation of pymsteams.  It will send a message to the teams webhook url with plain text in the message.
+
+```python
+import pymsteams
+
+# You must create the connectorcard object with the Microsoft Webhook URL
+myTeamsMessage = pymsteams.connectorcard("<Microsoft Webhook URL>")
+
+# Add text to the message.
+myTeamsMessage.text("this is my text")
+
+# send the message.
+myTeamsMessage.send()
+```
+
+### Creating CreatorCard Messages to send via async loop
+
+```python
+import asyncio
+import pymsteams
+
+loop = asyncio.get_event_loop()
+
+# the async_connectorcard object is used instead of the normal one.
+myTeamsMessage = pymsteams.async_connectorcard("<Microsoft Webhook URL>")
+
+# all formatting for the message should be the same
+myTeamsMessage.text("This is my message")
+
+# to send the message, pass to the event loop
+loop.run_until_complete(myTeamsMessage.send())
+```
+
+Please visit the python asyncio documentation for more info on using asyncio and the event loop: https://docs.python.org/3/library/asyncio-eventloop.html
+
+
+### Optional Formatting Methods for Cards
+
+#### Add a title
+```python
+myTeamsMessage.title("This is my message title")
+```
+
+#### Add a link button
+```python
+myTeamsMessage.addLinkButton("This is the button Text", "https://github.com/rveachkc/pymsteams/")
+```
+
+#### Change URL
+This is useful in the event you need to post the same message to multiple rooms.
+```python
+myTeamsMessage.newhookurl("<My New URL>")
+```
+
+#### Set Color Theme
+This sets the theme color of the card. The parameter is expected to be a hex color code without the hash or the string red.
+```python
+myTeamsMessage.color("<Hex Color Code>")
+```
+
+#### Preview your object
+This is a simple print command to view your connector card message object before sending.
+```python
+myTeamsMessage.printme()
+```
+
+### Adding sections to the Connector Card Message
+To create a section and add various formatting elements
+```python
+# create the section
+myMessageSection = pymsteams.cardsection()
+
+# Section Title
+myMessageSection.title("Section title")
+
+# Activity Elements
+myMessageSection.activityTitle("my activity title")
+myMessageSection.activitySubtitle("my activity subtitle")
+myMessageSection.activityImage("http://i.imgur.com/c4jt321l.png")
+myMessageSection.activityText("This is my activity Text")
+
+# Facts are key value pairs displayed in a list.
+myMessageSection.addFact("this", "is fine")
+myMessageSection.addFact("this is", "also fine")
+
+# Section Text
+myMessageSection.text("This is my section text")
+
+# Section Images
+myMessageSection.addImage("http://i.imgur.com/c4jt321l.png", ititle="This Is Fine")
+
+# Add your section to the connector card object before sending
+myTeamsMessage.addSection(myMessageSection)
+```
+You may also add multiple sections to a connector card message as well.
+```python
+# Create Section 1
+Section1 = pymsteams.cardsection()
+Section1.text("My First Section")
+
+# Create Section 2
+Section2 = pymsteams.cardsection()
+Section2.text("My Second Section")
+
+# Add both Sections to the main card object
+myTeamsMessage.addSection(Section1)
+myTeamsMessage.addSection(Section2)
+
+# Then send the card
+myTeamsMessage.send()
+```
+### Adding potential actions to the Connector Card Message
+To create a actions on which the user can interect with in MS Teams
+To find out more information on what actions can be used, please visit https://docs.microsoft.com/en-us/microsoftteams/platform/concepts/connectors/connectors-using#setting-up-a-custom-incoming-webhook
+
+```python
+myTeamsMessage = pymsteams.connectorcard("<Microsoft Webhook URL>")
+
+myTeamsPotentialAction1 = pymsteams.potentialaction(_name = "Add a comment")
+myTeamsPotentialAction1.addInput("TextInput","comment","Add a comment here",False)
+myTeamsPotentialAction1.addAction("HttpPost","Add Comment","https://...")
+
+myTeamsPotentialAction2 = pymsteams.potentialaction(_name = "Set due date")
+myTeamsPotentialAction2.addInput("DateInput","dueDate","Enter due date")
+myTeamsPotentialAction2.addAction("HttpPost","save","https://...")
+
+myTeamsPotentialAction3 = pymsteams.potentialaction(_name = "Change Status")
+myTeamsPotentialAction3.choices.addChoices("In progress","0")
+myTeamsPotentialAction3.choices.addChoices("Active","1")
+myTeamsPotentialAction3.addInput("MultichoiceInput","list","Select a status",False)
+myTeamsPotentialAction3.addAction("HttpPost","Save","https://...")
+
+myTeamsMessage.addPotentialAction(myTeamsPotentialAction1)
+myTeamsMessage.addPotentialAction(myTeamsPotentialAction2)
+myTeamsMessage.addPotentialAction(myTeamsPotentialAction3)
+
+myTeamsMessage.summary("Test Message")
+
+myTeamsMessage.send()
+```
+### Adding HTTP Post to potential actions in the Connector Card Message
+
+```python
+myTeamsMessage = pymsteams.connectorcard("<Microsoft Webhook URL>")
+
+myTeamsPotentialAction1 = pymsteams.potentialaction(_name = "Add a comment")
+# You can add a TextInput to your potential action like below - Please note the 2nd argment below as the id name
+myTeamsPotentialAction1.addInput("TextInput","comment","Add a comment here",False)
+# we use the 2nd argument above as the id name to parse the values into the body post like below.
+myTeamsPotentialAction1.addAction("HttpPost","Add Comment","https://...", "{{comment.value}}")
+myTeamsMessage.addPotentialAction(myTeamsPotentialAction1)
+
+
+myTeamsMessage.summary("Test Message")
+
+myTeamsMessage.send()
+
+# Notes:
+# If you post anything via teams, you will get some Javascript encoding happening via the post - For example:
+# Posting this:  {"name":"john", "comment" : "nice"}
+# Output will be:  b'{\\u0022name\\u0022:\\u0022john\\u0022, \\u0022comment\\u0022 : \\u0022nice\\u0022}'
+# i solved this issue by decoding unicode escape for a custom rest backend.
+```
+
+Please use Github issues to report any bugs or request enhancements.
+
+## Troubleshooting HTTP response
+
+This module is really just a nice wrapper pointed at the Microsoft API. To help troubleshoot missing messages, the requests response content is saved to the connectorcard class attribute `last_http_response`.
+
+To get the last http status code:
+```python
+import pymsteams
+
+myTeamsMessage = pymsteams.connectorcard("<Microsoft Webhook URL>")
+myTeamsMessage.text("this is my text")
+myTeamsMessage.send()
+
+last_status_code = myTeamsMessage.last_http_response.status_code
+```
+
+More info on the Response Content is available in the requests documentation, [link](https://2.python-requests.org/en/master/user/quickstart/#response-content).
+
+## Exceptions
+
+If the call to the Microsoft Teams webhook service fails, a `TeamsWebhookException` will be thrown.
+
+## Testing
+
+In order to test in your environment with pytest, set the environment variable `MS_TEAMS_WEBHOOK` to the Microsoft Teams Webhook url you would like to use.
+
+Then, from the root of the repo, install the requirements and run pytest.
+
+```bash
+pip install -r dev-requirements.txt
+MS_TEAMS_WEBHOOK=MicrosoftWebhookURL
+export MS_TEAMS_WEBHOOK
+pytest --cov=./pymsteams --cov-report=term-missing --cov-branch
+```
+
+This will send two MS Teams messages describing how they are formatted.  Manually validate that the message comes through as expected.
+
+## Certificate Validation
+
+In some situations, a custom CA bundle must be used.  This can be set on class initialization, by setting the verify parameter.
+
+```python
+import pymsteams
+
+# set custom ca bundle
+msg = pymsteams.connectorcard("<Microsoft Webhook URL>", verify="/path/to/file")
+
+# disable CA validation
+msg = pymsteams.connectorcard("<Microsoft Webhook URL>", verify=False)
+```
+
+Set to either the path of a custom CA bundle or False to disable.
+
+The requests documentation can be referenced for full details: https://2.python-requests.org/en/master/user/advanced/#ssl-cert-verification
