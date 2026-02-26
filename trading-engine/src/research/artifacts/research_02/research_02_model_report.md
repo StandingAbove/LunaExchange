@@ -36,7 +36,7 @@ A nonlinear combo is still worth trying (not yet tested):
 ### 5.1 Individual model metrics
 | model | annual_return | annual_vol | sharpe | max_drawdown | calmar | hit_rate |
 | --- | --- | --- | --- | --- | --- | --- |
-| BuyHold | 1.5341 | 0.9250 | 1.4597 | -0.9307 | 1.6483 | 0.5293 |
+| BuyHold | 0.7228 | 0.6750 | 0.7900 | -0.9307 | 0.8583 | 0.5293 |
 | MiningCost | 0.8824 | 0.7310 | 1.2210 | -0.8139 | 1.0842 | 0.4627 |
 | Trend | 0.8057 | 0.8945 | 1.1034 | -0.9347 | 0.8619 | 0.5090 |
 | OU | -0.5346 | 0.7307 | -0.6596 | -1.0000 | -0.5346 | 0.2697 |
@@ -99,4 +99,4 @@ Marginal analysis below estimates incremental contribution of each model vs a po
 | ZScore | 0.0052 | -0.0035 | -0.0256 |
 
 ## 9) Does the model add portfolio value?
-In this sample, the full four-model combination adds value primarily through **risk control** (lower volatility and shallower drawdown) rather than pure Sharpe outperformance against buy-and-hold BTC. Full combo annual return is **57.56%** with Sharpe **1.33**, versus Buy/Hold Sharpe **1.46**. For multi-asset portfolios where drawdown budget matters, this can still improve overall allocation efficiency.
+In this sample, the full four-model combination adds value primarily through **risk control** (lower volatility and shallower drawdown) rather than pure Sharpe outperformance against buy-and-hold BTC. Full combo annual return is **57.56%** with Sharpe **1.33**, versus Buy/Hold Sharpe **0.79**. For multi-asset portfolios where drawdown budget matters, this can still improve overall allocation efficiency.
