@@ -1,0 +1,101 @@
+name: MANUAL ROLLBACK
+
+on:
+  workflow_dispatch:
+    inputs:
+      service_to_rollback:
+        description: 'Service to Rollback'
+        required: true
+        type: choice
+        options:
+          - production-paper
+          - simulations-paper
+      target_tag:
+        description: 'Target Tag (e.g. prod-paper-v1.0.4 or sim-paper-v1.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Docker auth
+        run: gcloud auth configure-docker
+
+      - name: Execute Rollback
+        env:
+          PROJECT_ID: wsb-hc-qasap-ae2e
+          REGION: us-east4
+          SERVICE_ACCOUNT: prod-job-runner@wsb-hc-qasap-ae2e.iam.gserviceaccount.com
+          SERVICE_NAME: ${{ inputs.service_to_rollback }}
+          TARGET_TAG: ${{ inputs.target_tag }}
+        run: |
+          echo "⚠️ Rolling back $SERVICE_NAME to tag $TARGET_TAG"
+          
+          # Map selection to actual Job Name
+          if [ "$SERVICE_NAME" == "production-paper" ]; then
+            JOB_NAME="production-paper-job"
+          elif [ "$SERVICE_NAME" == "simulations-paper" ]; then
+            JOB_NAME="simulations-paper-job"
+          fi
+
+          # Update the Job to point to the old image tag
+          # Note: We update the job definition, but we do not auto-execute it unless you want to. 
+          # This just ensures the *next* scheduled run uses the old code.
+          gcloud run jobs update "$JOB_NAME" \
+            --image "gcr.io/$PROJECT_ID/$SERVICE_NAME:$TARGET_TAG" \
+            --region "$REGION" \
+            --service-account "$SERVICE_ACCOUNT"
+          
+          echo "✅ Rollback configuration successful."
+
+      # -----------------------------------------------------------
+      # NOTIFY TEAMS (PYTHON)
+      # -----------------------------------------------------------
+      - name: Notify Teams
+        if: success()
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Run Notification Script
+        if: success()
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          SERVICE: ${{ inputs.service_to_rollback }}
+          TAG: ${{ inputs.target_tag }}
+          ACTOR: ${{ github.actor }}
+          REPO_URL: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        run: |
+          pip install pymsteams
+          python -c "
+          import pymsteams
+          import os
+
+          # Initialize card
+          myTeamsMessage = pymsteams.connectorcard(os.environ['TEAMS_WEBHOOK_URL'])
+
+          # Build the message text
+          msg = f'''
+          ⚠️Rollback Executed ⚠️
+          **Service:** {os.environ['SERVICE']}  
+          **Rolled back to:** {os.environ['TAG']}  
+          **Executed by:** {os.environ['ACTOR']}
+          '''
+          myTeamsMessage.text(msg)
+          myTeamsMessage.send()
+          "

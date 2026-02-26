@@ -1,0 +1,18 @@
+version: "3.9"
+services:
+  lab:
+    build:
+      context: ../..
+      dockerfile: src/dashboard/Dockerfile
+    ports: ["8501:8501"]
+    working_dir: /work/src/dashboard
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/service-account.json
+    volumes:
+      - type: bind
+        source: ${GOOGLE_APPLICATION_CREDENTIALS}
+        target: /service-account.json
+        read_only: true
+      - type: bind
+        source: ../..
+        target: /work

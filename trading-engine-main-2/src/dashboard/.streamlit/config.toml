@@ -1,0 +1,7 @@
+[theme]
+base="dark"
+primaryColor="#D39338"              # accent (buttons, toggles, active radio)
+backgroundColor="#1B1912"           # main page background
+secondaryBackgroundColor="#13120A"  # sidebar + “card” backgrounds
+textColor="#EDECEC"                 # main text
+font="sans serif"

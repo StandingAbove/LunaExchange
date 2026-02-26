@@ -1,0 +1,31 @@
+start_date: 2024-01-01
+end_date: 2026-12-31
+universe: [
+  TLT-US, IEI-US, SHY-US, BIL-US, SLV-US, GLD-US,
+  USO-US, UNG-US, SPY-US, EWJ-US, INDA-US, MCHI-US,
+  IBIT-US, ETHA-US, EZU-US, VIXY-US
+]
+model_state_features: [
+  close_momentum_10, close_momentum_20, close_momentum_30,
+  close_momentum_60, close_momentum_90, close_momentum_120,
+  close_momentum_240
+]
+models: [
+  TLT_AMMA, IEI_AMMA, SHY_AMMA, BIL_AMMA, SLV_AMMA, GLD_AMMA,
+  SPY_AMMA, INDA_AMMA, MCHI_AMMA, IBIT_AMMA, ETHA_AMMA, EZU_AMMA
+]
+aggregators: [ model_mvo_amma_constrained ]
+optimizers: [ mean_variance_constrained ]
+
+cash_buffer: 0.005 # % of NAV buffer to maintain in the account (0.5%)
+
+ib_gateway:
+  host: 127.0.0.1
+  port: 4002
+  client_id: 1
+  flex_web_token: 167172104920512086554752
+  nav_flex_query_id: 1323165
+  fund_inception_date: 2025-10-15
+notifications:
+  msteams_webhook: "https://prod-82.westus.logic.azure.com:443/workflows/84ecc862f73c44d48669403ec1f79355/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=fmRlFB67u4ifTp3PXN5HQs8LV5grrjpHDfgJghcdEvs"
+

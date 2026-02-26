@@ -1,0 +1,6 @@
+.git
+__pycache__/
+**/.ipynb_checkpoints/
+*.parquet
+*.csv
+# Do NOT ignore pyproject.toml or poetry.lock
