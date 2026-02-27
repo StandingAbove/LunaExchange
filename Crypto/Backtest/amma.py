@@ -16,7 +16,7 @@ except ModuleNotFoundError:
 
 def AMMA(
         ticker: str,
-        momentum_weights: Dict[int, float],  # {window: weight}
+        momentum_weights: Dict[int, float],
         threshold: float = 0.0,
         long_enabled: bool = True,
         short_enabled: bool = False,
@@ -52,6 +52,7 @@ def AMMA(
 
         for window, weight in momentum_weights.items():
             colname = f"close_momentum_{window}"
+            sig = lf.filter(pl.col("ticker") == ticker).select([pl.col("date"), pl.col(colname).alias("sig")])
 
             sig = (
                 lf.filter(pl.col("ticker") == ticker)
@@ -64,13 +65,10 @@ def AMMA(
             long_cond = (pl.col("sig") > threshold) if long_enabled else None
             short_cond = (pl.col("sig") < -threshold) if short_enabled else None
             expr = pl.lit(0.0)
-
             if long_enabled and short_enabled:
                 expr = (
-                    pl.when(long_cond.fill_null(False))
-                    .then(pl.lit(1.0) * weight)
-                    .when(short_cond.fill_null(False))
-                    .then(pl.lit(-1.0) * weight)
+                    pl.when(long_cond.fill_null(False)).then(pl.lit(1.0) * weight)
+                    .when(short_cond.fill_null(False)).then(pl.lit(-1.0) * weight)
                     .otherwise(pl.lit(0.0))
                 )
             elif long_enabled:
@@ -89,11 +87,10 @@ def AMMA(
             combined = combined.join(frame, on="date", how="inner")
 
         weight_cols = [f"sig_{w}" for w in momentum_weights.keys()]
-        final = combined.with_columns(
-            sum([pl.col(c) for c in weight_cols]).alias(ticker)
-        ).select(["date", ticker])
+        return combined.with_columns(sum([pl.col(c) for c in weight_cols]).alias(ticker)).select(["date", ticker])
 
-        return final
+    return run_model
+
 
     return run_model
 
