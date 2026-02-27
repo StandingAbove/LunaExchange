@@ -1,4 +1,4 @@
-from typing import Callable, Dict
+from typing import Any, Callable, Dict
 
 import pandas as pd
 try:
@@ -20,7 +20,7 @@ def AMMA(
         threshold: float = 0.0,
         long_enabled: bool = True,
         short_enabled: bool = False,
-) -> Callable[[ModelStateBundle], LazyFrame]:
+) -> Callable[[Any], Any]:
     """
     Adaptive Momentum Model Averaging (AMMA).
 
@@ -39,8 +39,8 @@ def AMMA(
 
     Returns
     -------
-    Callable[[ModelStateBundle], LazyFrame]
-        Function that takes a ModelStateBundle and returns a LazyFrame of weights.
+    Callable[[Any], Any]
+        Function that takes a model-state bundle and returns a Polars LazyFrame of weights.
     """
 
     def run_model(bundle: ModelStateBundle) -> LazyFrame:
@@ -61,14 +61,11 @@ def AMMA(
                 ])
             )
 
-            # Signal logic
             long_cond = (pl.col("sig") > threshold) if long_enabled else None
             short_cond = (pl.col("sig") < -threshold) if short_enabled else None
-
             expr = pl.lit(0.0)
 
             if long_enabled and short_enabled:
-                # Long if positive, short if negative
                 expr = (
                     pl.when(long_cond.fill_null(False))
                     .then(pl.lit(1.0) * weight)
@@ -85,15 +82,12 @@ def AMMA(
                 pl.col("date"),
                 expr.cast(pl.Float64).alias(f"sig_{window}")
             ])
-
             sig_frames.append(weighted_sig)
 
-        # Join on date
         combined = sig_frames[0]
         for frame in sig_frames[1:]:
             combined = combined.join(frame, on="date", how="inner")
 
-        # Sum across signals
         weight_cols = [f"sig_{w}" for w in momentum_weights.keys()]
         final = combined.with_columns(
             sum([pl.col(c) for c in weight_cols]).alias(ticker)
