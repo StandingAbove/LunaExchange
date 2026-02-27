@@ -1,6 +1,17 @@
 from typing import Any, Callable, Dict
 
 import pandas as pd
+try:
+    import polars as pl
+    from polars import LazyFrame
+except ModuleNotFoundError:  # optional for pandas-only workflows
+    pl = None
+    LazyFrame = object
+
+try:
+    from common.bundles import ModelStateBundle
+except ModuleNotFoundError:
+    ModelStateBundle = object
 
 
 def AMMA(
@@ -32,8 +43,9 @@ def AMMA(
         Function that takes a model-state bundle and returns a Polars LazyFrame of weights.
     """
 
-    def run_model(bundle: Any) -> Any:
-        import polars as pl
+    def run_model(bundle: ModelStateBundle) -> LazyFrame:
+        if pl is None:
+            raise ImportError('polars is required for AMMA() model-state execution.')
 
         lf = bundle.model_state.lazy()
         sig_frames = []
