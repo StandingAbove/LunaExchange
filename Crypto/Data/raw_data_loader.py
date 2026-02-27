@@ -144,3 +144,66 @@ def basic_data_diagnostics(df: pd.DataFrame) -> dict:
     )
 
     return diagnostics
+
+def load_ibit_with_mining_cost(
+    ibit_path: str,
+    cleaned_crypto_path: str,
+    forward_fill_mining_cost: bool = True,
+) -> pd.DataFrame:
+    """
+    Load IBIT close data and align mining cost from cleaned_crypto_data.csv by date.
+
+    Join logic:
+    - Build daily IBIT close on date index.
+    - Build mining-cost series from cleaned dataset.
+    - If `forward_fill_mining_cost` is True, left-join to IBIT dates then forward-fill
+      mining cost (useful when mining cost is less frequent).
+    - Otherwise, perform strict inner join on exact overlapping dates.
+    """
+    ibit = pd.read_csv(ibit_path).copy()
+    cleaned = pd.read_csv(cleaned_crypto_path).copy()
+
+    # --- IBIT date and close ---
+    ibit_date_col = next((c for c in ["Date", "date", "Timestamp", "timestamp"] if c in ibit.columns), None)
+    ibit_close_col = next((c for c in ["Close", "close", "Adj Close", "adj_close", "Price", "price"] if c in ibit.columns), None)
+
+    if ibit_date_col is None or ibit_close_col is None:
+        raise ValueError("IBIT data must contain date and close/price columns.")
+
+    ibit_df = pd.DataFrame({
+        "date": pd.to_datetime(ibit[ibit_date_col], format="%m/%d/%y", errors="coerce"),
+        "close": pd.to_numeric(
+            ibit[ibit_close_col].astype(str).str.replace(",", "", regex=False).str.replace("$", "", regex=False),
+            errors="coerce",
+        ),
+    }).dropna(subset=["date", "close"]).drop_duplicates(subset=["date"], keep="last").sort_values("date")
+
+    # --- cleaned dataset date and mining cost ---
+    cleaned_date_col = next((c for c in ["Date", "date", "Timestamp", "timestamp"] if c in cleaned.columns), None)
+    if cleaned_date_col is None:
+        raise ValueError("cleaned_crypto_data.csv must contain a date column.")
+
+    mining_candidates = [
+        "COST_TO_MINE",
+        "mining_cost",
+        "cost_to_mine",
+        "production_cost",
+        "cost",
+    ]
+    mining_col = next((c for c in mining_candidates if c in cleaned.columns), None)
+    if mining_col is None:
+        raise ValueError(f"Could not find mining cost column in cleaned data. Tried: {mining_candidates}")
+
+    mining_df = pd.DataFrame({
+        "date": pd.to_datetime(cleaned[cleaned_date_col], errors="coerce"),
+        "mining_cost": pd.to_numeric(cleaned[mining_col], errors="coerce"),
+    }).dropna(subset=["date", "mining_cost"]).drop_duplicates(subset=["date"], keep="last").sort_values("date")
+
+    if forward_fill_mining_cost:
+        merged = ibit_df.merge(mining_df, on="date", how="left").sort_values("date")
+        merged["mining_cost"] = merged["mining_cost"].ffill()
+        merged = merged.dropna(subset=["mining_cost"])
+    else:
+        merged = ibit_df.merge(mining_df, on="date", how="inner").sort_values("date")
+
+    return merged.set_index("date")
